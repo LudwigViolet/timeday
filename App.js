@@ -1,477 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+//===================== 样式 =======================
 import './App.css';
-
 // ==================== 工具函数 ====================
+import { CookieUtils, HistoryUtils } from './CookieUtils.js';
+import { ApiService } from './APIservice.js';
+// ==================== 组件 ====================
+import Login from './Login.js';
+import UserProfile from './UserProfile.js';
 
-/**
- * Cookie操作工具类
- * 用于管理用户登录状态的持久化存储
- * 后端对接说明：这些Cookie值需要与后端的session/token验证机制对应
- */
-const CookieUtils = {
-  /**
-   * 设置Cookie
-   * @param {string} name - Cookie名称
-   * @param {string} value - Cookie值
-   * @param {number} days - 过期天数
-   * 后端对接：userToken和userData是关键的Cookie，需要后端验证
-   */
-  setCookie: (name, value, days) => {
-    const expires = new Date();
-    expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
-    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
-  },
-  
-  /**
-   * 获取Cookie值
-   * @param {string} name - Cookie名称
-   * @returns {string|null} Cookie值或null
-   */
-  getCookie: (name) => {
-    const nameEQ = name + "=";
-    const ca = document.cookie.split(';');
-    for(let i = 0; i < ca.length; i++) {
-      let c = ca[i];
-      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-    }
-    return null;
-  },
-  
-  /**
-   * 删除Cookie
-   * @param {string} name - Cookie名称
-   * 用于用户登出时清理登录状态
-   */
-  deleteCookie: (name) => {
-    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-  }
-};
-
-/**
- * 浏览历史工具类
- * 用于管理用户的浏览记录，存储在localStorage中
- * 后端对接说明：这些数据可以同步到后端用户行为分析系统
- */
-const HistoryUtils = {
-  /**
-   * 获取浏览历史
-   * @returns {Array} 浏览历史数组
-   */
-  getHistory: () => {
-    const history = localStorage.getItem('browsingHistory');
-    return history ? JSON.parse(history) : [];
-  },
-  
-  /**
-   * 添加浏览记录
-   * @param {Object} item - 浏览项目对象
-   * 后端对接：可以通过API将浏览行为发送到后端进行用户行为分析
-   */
-  addToHistory: (item) => {
-    let history = HistoryUtils.getHistory();
-    const existingIndex = history.findIndex(h => h.id === item.id && h.type === item.type);
-    
-    if (existingIndex !== -1) {
-      // 更新访问次数和最后访问时间
-      history[existingIndex].visitCount = (history[existingIndex].visitCount || 1) + 1;
-      history[existingIndex].lastVisited = new Date().toISOString();
-    } else {
-      // 添加新的浏览记录
-      history.unshift({
-        ...item,
-        visitCount: 1,
-        lastVisited: new Date().toISOString()
-      });
-    }
-    
-    // 限制历史记录数量为50条
-    history = history.slice(0, 50);
-    localStorage.setItem('browsingHistory', JSON.stringify(history));
-  },
-  
-  /**
-   * 清空浏览历史
-   */
-  clearHistory: () => {
-    localStorage.removeItem('browsingHistory');
-  }
-};
-
-// ==================== API服务 ====================
-
-/**
- * API服务类 - 与后端接口对接的核心模块
- * 后端开发人员需要实现以下所有API接口
- * 所有接口都应该返回统一的响应格式：{ success: boolean, data?: any, message?: string }
- */
-const ApiService = {
-  /**
-   * 用户登录接口
-   * @param {string} username - 用户名
-   * @param {string} password - 密码
-   * @returns {Promise<Object>} 登录响应
-   * 
-   * 后端API接口：POST /api/auth/login
-   * 请求体：{ username: string, password: string }
-   * 响应格式：{
-   *   success: boolean,
-   *   data?: {
-   *     username: string,
-   *     userType: 'user' | 'guest',  // 用户类型决定功能权限
-   *     email: string,
-   *     token: string  // JWT token或session token
-   *   },
-   *   message?: string
-   * }
-   */
-  login: async (username, password) => {
-    // 模拟网络延迟
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // 模拟用户数据 - 后端需要替换为真实的用户验证逻辑
-    const users = {
-      'tzy': { password: '123456', userType: 'guest', email: 'tzy@example.com' },
-      'TZY': { password: '123456', userType: 'user', email: 'test@example.com' }
-    };
-    
-    if (users[username] && users[username].password === password) {
-      return {
-        success: true,
-        data: {
-          username,
-          userType: users[username].userType,
-          email: users[username].email,
-          token: 'mock_token_' + Date.now()  // 后端需要生成真实的JWT token
-        }
-      };
-    }
-    
-    return {
-      success: false,
-      message: '用戶名或密碼錯誤'
-    };
-  },
-  
-  /**
-   * 用户注册接口
-   * @param {string} username - 用户名
-   * @param {string} email - 邮箱
-   * @param {string} password - 密码
-   * @returns {Promise<Object>} 注册响应
-   * 
-   * 后端API接口：POST /api/auth/register
-   * 请求体：{ username: string, email: string, password: string }
-   * 响应格式：{ success: boolean, message: string }
-   */
-  register: async (username, email, password) => {
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // 模拟用户名重复检查 - 后端需要实现真实的用户名唯一性验证
-    if (username === 'existing_user') {
-      return {
-        success: false,
-        message: '用戶名已存在'
-      };
-    }
-    
-    return {
-      success: true,
-      message: '註冊成功！請登入您的帳號。'
-    };
-  },
-  
-  /**
-   * 会话验证接口
-   * @param {string} token - 用户token
-   * @returns {Promise<Object>} 验证响应
-   * 
-   * 后端API接口：POST /api/auth/validate
-   * 请求头：Authorization: Bearer {token}
-   * 响应格式：{ success: boolean }
-   */
-  validateSession: async (token) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    // 后端需要验证token的有效性
-    return { success: true };
-  },
-  
-  /**
-   * 获取学科数据接口
-   * @returns {Promise<Object>} 学科数据响应
-   * 
-   * 后端API接口：GET /api/subjects
-   * 响应格式：{
-   *   success: boolean,
-   *   data: {
-   *     [subjectKey]: {
-   *       name: string,
-   *       icon: string,
-   *       topics: Array<{
-   *         id: string,
-   *         name: string,
-   *         papers: number,
-   *         lastUpdated: string
-   *       }>
-   *     }
-   *   }
-   * }
-   */
-  getSubjects: async () => {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    return {
-      success: true,
-      data: subjectsData  // 后端需要从数据库获取真实的学科数据
-    };
-  },
-  
-  /**
-   * 搜索试卷接口
-   * @param {string} query - 搜索关键词
-   * @returns {Promise<Object>} 搜索结果
-   * 
-   * 后端API接口：GET /api/papers/search?q={query}
-   * 响应格式：{
-   *   success: boolean,
-   *   data: Array<{
-   *     id: string,
-   *     title: string,
-   *     subject: string,
-   *     year: string,
-   *     session: string,
-   *     paperNumber: number
-   *   }>
-   * }
-   */
-  searchPapers: async (query) => {
-    await new Promise(resolve => setTimeout(resolve, 600));
-    return {
-      success: true,
-      data: []  // 后端需要实现真实的搜索逻辑
-    };
-  }
-};
 
 // ==================== 模拟数据 ====================
+import { subjectsData, userTestData } from './mockData.js';
 
-/**
- * 学科数据结构
- * 后端数据库表结构参考：
- * subjects表：id, name, icon, created_at, updated_at
- * topics表：id, subject_id, name, code, papers_count, last_updated
- * papers表：id, topic_id, title, year, session, paper_number, file_path
- */
-const subjectsData = {
-  mathematics: {
-    name: 'Mathematics',
-    icon: '📐',
-    topics: [
-      { id: '9709', name: 'A Level Mathematics', papers: 178, lastUpdated: '2024-01-14' },
-      { id: '0580', name: 'IGCSE Mathematics', papers: 267, lastUpdated: '2024-01-09' },
-      { id: '4MA1', name: 'Edexcel A Level Mathematics', papers: 145, lastUpdated: '2024-01-12' }
-    ]
-  },
-  physics: {
-    name: 'Physics',
-    icon: '⚛️',
-    topics: [
-      { id: '9702', name: 'A Level Physics', papers: 156, lastUpdated: '2024-01-15' },
-      { id: '0625', name: 'IGCSE Physics', papers: 234, lastUpdated: '2024-01-10' },
-      { id: '9PH0', name: 'Edexcel A Level Physics', papers: 142, lastUpdated: '2024-01-13' }
-    ]
-  },
-  computerscience: {
-    name: 'Computer Science',
-    icon: '💻',
-    topics: [
-      { id: '9618', name: 'A Level Computer Science', papers: 89, lastUpdated: '2024-01-16' },
-      { id: '0478', name: 'IGCSE Computer Science', papers: 156, lastUpdated: '2024-01-08' },
-      { id: '9CP0', name: 'Edexcel A Level Computer Science', papers: 78, lastUpdated: '2024-01-11' }
-    ]
-  },
-  furthermathematics: {
-    name: 'Further Mathematics',
-    icon: '🔢',
-    topics: [
-      { id: '9231', name: 'A Level Further Mathematics', papers: 134, lastUpdated: '2024-01-17' },
-      { id: '0606', name: 'IGCSE Additional Mathematics', papers: 98, lastUpdated: '2024-01-09' },
-      { id: '9FM0', name: 'Edexcel A Level Further Mathematics', papers: 112, lastUpdated: '2024-01-14' }
-    ]
-  },
-  chemistry: {
-    name: 'Chemistry',
-    icon: '🧪',
-    topics: [
-      { id: '9701', name: 'A Level Chemistry', papers: 142, lastUpdated: '2024-01-12' },
-      { id: '0620', name: 'IGCSE Chemistry', papers: 198, lastUpdated: '2024-01-08' },
-      { id: '9CH0', name: 'Edexcel A Level Chemistry', papers: 134, lastUpdated: '2024-01-10' }
-    ]
-  },
-  biology: {
-    name: 'Biology',
-    icon: '🧬',
-    topics: [
-      { id: '9700', name: 'A Level Biology', papers: 134, lastUpdated: '2024-01-11' },
-      { id: '0610', name: 'IGCSE Biology', papers: 189, lastUpdated: '2024-01-07' },
-      { id: '9BI0', name: 'Edexcel A Level Biology', papers: 123, lastUpdated: '2024-01-09' }
-    ]
-  },
-  business: {
-    name: 'Business Studies',
-    icon: '💼',
-    topics: [
-      { id: '9609', name: 'A Level Business', papers: 98, lastUpdated: '2024-01-15' },
-      { id: '0450', name: 'IGCSE Business Studies', papers: 145, lastUpdated: '2024-01-06' },
-      { id: '9BS0', name: 'Edexcel A Level Business', papers: 87, lastUpdated: '2024-01-12' }
-    ]
-  },
-  english: {
-    name: 'English',
-    icon: '📖',
-    topics: [
-      { id: '9093', name: 'A Level English Language', papers: 98, lastUpdated: '2024-01-13' },
-      { id: '0500', name: 'IGCSE First Language English', papers: 156, lastUpdated: '2024-01-06' },
-      { id: '9ET0', name: 'Edexcel A Level English Literature', papers: 89, lastUpdated: '2024-01-11' }
-    ]
-  },
-  history: {
-    name: 'History',
-    icon: '📜',
-    topics: [
-      { id: '9489', name: 'A Level History', papers: 112, lastUpdated: '2024-01-14' },
-      { id: '0470', name: 'IGCSE History', papers: 134, lastUpdated: '2024-01-07' },
-      { id: '9HI0', name: 'Edexcel A Level History', papers: 98, lastUpdated: '2024-01-10' }
-    ]
-  }
-};
 
-/**
- * 文件查看器组件
- * 用于预览试卷文件
- * 后端对接：需要提供文件预览API和下载API
- */
-const FileViewer = ({ file, onClose }) => {
-  if (!file) return null;
-  
-  return (
-    <div className="file-viewer-overlay" onClick={onClose}>
-      <div className="file-viewer" onClick={e => e.stopPropagation()}>
-        <div className="file-viewer-header">
-          <div className="file-info">
-            <h3>{file.title}</h3>
-            <div className="file-meta">
-              <span className="duration">Duration: 2h15m</span>
-              {/* 后端需要提供标准答案链接API */}
-              <button className="mark-scheme-link">Mark scheme link</button>
-            </div>
-          </div>
-          <button className="close-btn" onClick={onClose}>✕</button>
-        </div>
-        <div className="file-content">
-          <div className="candidate-section">
-            <h4>CANDIDATE NAME</h4>
-            <div className="candidate-lines">
-              <div className="line"></div>
-              <div className="line"></div>
-              <div className="line"></div>
-            </div>
-          </div>
-          {/* 这里需要集成PDF查看器或图片查看器 */}
-          {/* 后端需要提供文件内容API：GET /api/files/{fileId}/content */}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/**
- * 用户测试数据
- * 后端数据库表结构参考：
- * user_textbooks表：id, user_id, title, subject, file_path
- * user_syllabuses表：id, user_id, title, subject, year, level, file_path
- * user_notebooks表：id, user_id, title, subject, pages, content
- */
-const userTestData = {
-  textBooks: [
-    // Physics Textbooks
-    { id: 1, title: 'Cambridge IGCSE Physics Coursebook', subject: 'Physics', level: 'IGCSE', author: 'David Sang', publisher: 'Cambridge University Press', year: '2023', description: 'Comprehensive coursebook covering all IGCSE Physics topics with practical activities and exam preparation.' },
-    { id: 2, title: 'Cambridge International AS & A Level Physics Coursebook', subject: 'Physics', level: 'A Level', author: 'David Sang', publisher: 'Cambridge University Press', year: '2023', description: 'Complete coverage of AS and A Level Physics with worked examples and practice questions.' },
-    
-    // Mathematics Textbooks
-    { id: 3, title: 'Cambridge IGCSE Mathematics Core and Extended Coursebook', subject: 'Mathematics', level: 'IGCSE', author: 'Karen Morrison', publisher: 'Cambridge University Press', year: '2023', description: 'Covers both Core and Extended curriculum with step-by-step explanations and exercises.' },
-    { id: 4, title: 'Cambridge International AS & A Level Mathematics Pure Mathematics 1', subject: 'Mathematics', level: 'A Level', author: 'Hugh Neill', publisher: 'Cambridge University Press', year: '2023', description: 'Pure Mathematics 1 coursebook with comprehensive coverage of algebraic and calculus topics.' },
-    
-    // Chemistry Textbooks
-    { id: 5, title: 'Cambridge IGCSE Chemistry Coursebook', subject: 'Chemistry', level: 'IGCSE', author: 'Richard Harwood', publisher: 'Cambridge University Press', year: '2023', description: 'Complete IGCSE Chemistry course with practical investigations and exam techniques.' },
-    { id: 6, title: 'Cambridge International AS & A Level Chemistry Coursebook', subject: 'Chemistry', level: 'A Level', author: 'Lawrie Ryan', publisher: 'Cambridge University Press', year: '2023', description: 'Comprehensive A Level Chemistry with detailed explanations and real-world applications.' },
-    
-    // Biology Textbooks
-    { id: 7, title: 'Cambridge IGCSE Biology Coursebook', subject: 'Biology', level: 'IGCSE', author: 'Mary Jones', publisher: 'Cambridge University Press', year: '2023', description: 'Complete IGCSE Biology coverage with practical work and assessment guidance.' },
-    { id: 8, title: 'Cambridge International AS & A Level Biology Coursebook', subject: 'Biology', level: 'A Level', author: 'Mary Jones', publisher: 'Cambridge University Press', year: '2023', description: 'Comprehensive A Level Biology with detailed biological processes and modern applications.' }
-  ],
-  syllabuses: [
-    { id: 1, title: 'Cambridge International AS & A Level Physics', subject: 'Physics', year: '2025-2027', level: 'A Level', code: '9702' },
-    { id: 2, title: 'Cambridge IGCSE Physics', subject: 'Physics', year: '2024-2026', level: 'IGCSE', code: '0625' },
-    { id: 3, title: 'Cambridge International AS & A Level Mathematics', subject: 'Mathematics', year: '2025-2027', level: 'A Level', code: '9709' },
-    { id: 4, title: 'Cambridge IGCSE Mathematics', subject: 'Mathematics', year: '2024-2026', level: 'IGCSE', code: '0580' },
-    { id: 5, title: 'Cambridge International AS & A Level Chemistry', subject: 'Chemistry', year: '2025-2027', level: 'A Level', code: '9701' },
-    { id: 6, title: 'Cambridge IGCSE Chemistry', subject: 'Chemistry', year: '2024-2026', level: 'IGCSE', code: '0620' },
-    { id: 7, title: 'Cambridge International AS & A Level Biology', subject: 'Biology', year: '2025-2027', level: 'A Level', code: '9700' },
-    { id: 8, title: 'Cambridge IGCSE Biology', subject: 'Biology', year: '2024-2026', level: 'IGCSE', code: '0610' }
-  ],
-  notebooks: [
-    { 
-      id: 1, 
-      title: 'Physics Lab Notes', 
-      subject: 'Physics', 
-      content: '# Physics Lab Notes\n\n## Experiment 1: Pendulum Motion\n\nToday we studied the motion of a simple pendulum...\n\n### Observations\n- Period increases with length\n- Mass does not affect period\n\n### Formula\n$$T = 2\\pi\\sqrt{\\frac{L}{g}}$$',
-      tags: ['physics', 'lab', 'pendulum'],
-      createdAt: '2024-01-15',
-      updatedAt: '2024-01-20',
-      folder: 'Physics'
-    },
-    { 
-      id: 2, 
-      title: 'Calculus Integration Methods', 
-      subject: 'Mathematics', 
-      content: '# Integration Methods\n\n## By Parts\nUseful for products of functions:\n$$\\int u \\, dv = uv - \\int v \\, du$$\n\n## Substitution\nFor composite functions...\n\n## Partial Fractions\nFor rational functions...',
-      tags: ['mathematics', 'calculus', 'integration'],
-      createdAt: '2024-01-10',
-      updatedAt: '2024-01-18',
-      folder: 'Mathematics'
-    },
-    { 
-      id: 3, 
-      title: 'Organic Chemistry Reactions', 
-      subject: 'Chemistry', 
-      content: '# Organic Chemistry Reactions\n\n## Substitution Reactions\n\n### SN1 Mechanism\n- Carbocation intermediate\n- Rate depends on substrate concentration\n\n### SN2 Mechanism\n- Concerted mechanism\n- Inversion of configuration',
-      tags: ['chemistry', 'organic', 'reactions'],
-      createdAt: '2024-01-12',
-      updatedAt: '2024-01-19',
-      folder: 'Chemistry'
-    },
-    { 
-      id: 4, 
-      title: 'Cell Biology Overview', 
-      subject: 'Biology', 
-      content: '# Cell Biology\n\n## Cell Structure\n\n### Prokaryotes\n- No nucleus\n- DNA in nucleoid region\n\n### Eukaryotes\n- Membrane-bound nucleus\n- Organelles present\n\n## Cell Division\n- Mitosis: somatic cells\n- Meiosis: gametes',
-      tags: ['biology', 'cell', 'structure'],
-      createdAt: '2024-01-08',
-      updatedAt: '2024-01-16',
-      folder: 'Biology'
-    },
-    { 
-      id: 5, 
-      title: 'Study Plan - Final Exams', 
-      subject: 'General', 
-      content: '# Final Exam Study Plan\n\n## Week 1\n- [ ] Review Physics formulas\n- [ ] Practice calculus problems\n- [ ] Chemistry reaction mechanisms\n\n## Week 2\n- [ ] Biology diagrams\n- [ ] Past papers\n- [ ] Group study sessions',
-      tags: ['study-plan', 'exams', 'schedule'],
-      createdAt: '2024-01-05',
-      updatedAt: '2024-01-21',
-      folder: 'Planning'
-    }
-  ]
-};
 
 // ==================== 主组件 ====================
 
@@ -481,29 +22,19 @@ const userTestData = {
  */
 function App() {
   // ==================== 状态管理 ====================
-  
+
   /**
    * 当前页面状态
-   * 可能的值：'loading', 'welcome', 'login', 'signup', 'main'
+   * 可能的值：'welcome', 'login', 'signup', 'main'
    */
-  const [currentPage, setCurrentPage] = useState('loading');
-  
+  const [currentPage, setCurrentPage] = useState('welcome');
+
   /**
    * 用户信息状态
    * 结构：{ username: string, userType: 'user'|'guest', email: string, token: string }
    */
   const [user, setUser] = useState(null);
-  
-  /**
-   * 加载状态 - 用于显示加载动画
-   */
-  const [loading, setLoading] = useState(false);
-  
-  /**
-   * 消息状态 - 用于显示成功/错误消息
-   */
-  const [message, setMessage] = useState('');
-  
+
   /**
    * 选中的学科
    */
@@ -518,6 +49,7 @@ function App() {
    * 浏览历史记录
    */
   const [browsingHistory, setBrowsingHistory] = useState([]);
+  
   
   /**
    * 当前激活的标签页
@@ -546,23 +78,48 @@ function App() {
   const [showUserProfile, setShowUserProfile] = useState(false);
   
   /**
+   * 用户资料页面的活动标签
+   */
+  const [activeProfileTab, setActiveProfileTab] = useState('overview');
+  
+  /**
    * 用户头像
    */
   const [userAvatar, setUserAvatar] = useState(null);
   
   /**
-   * 表单数据状态
-   * 包含登录和注册表单的所有字段
+   * 用户个人信息
    */
-  const [formData, setFormData] = useState({
-    loginUsername: '',
-    loginPassword: '',
-    signupUsername: '',
-    signupEmail: '',
-    signupPassword: '',
-    signupConfirmPassword: ''
+  const [userProfile, setUserProfile] = useState(() => {
+    const saved = localStorage.getItem('userProfile');
+    return saved ? JSON.parse(saved) : {
+      grade: '',
+      gender: '',
+      bio: '',
+      location: '',
+      curriculum: ''
+    };
   });
-
+  
+  // 學科選擇相關狀態
+  const [showSubjectModal, setShowSubjectModal] = useState(false);
+  const [selectedSubjects, setSelectedSubjects] = useState([
+    { id: 1, icon: '📐', name: '數學', description: 'Mathematics' },
+    { id: 2, icon: '⚛️', name: '物理', description: 'Physics' },
+    { id: 3, icon: '💻', name: '計算機科學', description: 'Computer Science' }
+  ]);
+  
+  // 时间跟踪状态
+  const [fileStartTime, setFileStartTime] = useState(null);
+  const [currentDuration, setCurrentDuration] = useState(null);
+  
+  // 用户使用时间统计状态
+  const [dailyUsageData, setDailyUsageData] = useState(() => {
+    const saved = localStorage.getItem('dailyUsageData');
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [sessionStartTime, setSessionStartTime] = useState(Date.now());
+  
   // ==================== 生命周期钩子 ====================
   
   /**
@@ -584,6 +141,75 @@ function App() {
       setUserAvatar(savedAvatar);
     }
   }, []);
+
+  /**
+   * 实时更新文件查看时长
+   */
+  useEffect(() => {
+    let interval = null;
+    if (fileStartTime && showFilePreview) {
+      interval = setInterval(() => {
+        const currentTime = Date.now();
+        const duration = currentTime - fileStartTime;
+        setCurrentDuration(duration);
+      }, 1000); // 每秒更新一次
+    } else {
+      setCurrentDuration(null);
+    }
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [fileStartTime, showFilePreview]);
+
+  /**
+   * 用户使用时间记录
+   * 每分钟更新一次当日使用时间
+   */
+  useEffect(() => {
+    const updateDailyUsage = () => {
+       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD格式
+       const currentTime = Date.now();
+       
+       setDailyUsageData(prevData => {
+           const newData = { ...prevData };
+           const todayUsage = newData[today] || 0;
+           newData[today] = todayUsage + (60 * 1000); // 每分钟增加60秒
+           
+           // 保存到localStorage
+           localStorage.setItem('dailyUsageData', JSON.stringify(newData));
+           return newData;
+         });
+       
+       // 重置session开始时间
+       setSessionStartTime(currentTime);
+     };
+
+    // 每分钟更新一次
+    const interval = setInterval(updateDailyUsage, 60000);
+    
+    // 页面关闭时保存最后的使用时间
+     const handleBeforeUnload = () => {
+        const today = new Date().toISOString().split('T')[0];
+        const currentTime = Date.now();
+        const sessionDuration = currentTime - sessionStartTime;
+        
+        const currentData = JSON.parse(localStorage.getItem('dailyUsageData') || '{}');
+        const todayUsage = currentData[today] || 0;
+        currentData[today] = todayUsage + sessionDuration;
+        localStorage.setItem('dailyUsageData', JSON.stringify(currentData));
+      };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      handleBeforeUnload(); // 组件卸载时也保存数据
+    };
+  }, [sessionStartTime]);
 
   // ==================== 工具函数 ====================
   
@@ -644,6 +270,80 @@ function App() {
   };
 
   /**
+   * 可選學科列表
+   */
+  const availableSubjects = [
+    { id: 1, icon: '📐', name: '數學', description: 'Mathematics' },
+    { id: 2, icon: '⚛️', name: '物理', description: 'Physics' },
+    { id: 3, icon: '💻', name: '計算機科學', description: 'Computer Science' },
+    { id: 4, icon: '🧪', name: '化學', description: 'Chemistry' },
+    { id: 5, icon: '🌍', name: '地理', description: 'Geography' },
+    { id: 6, icon: '📚', name: '歷史', description: 'History' },
+    { id: 7, icon: '🎨', name: '藝術', description: 'Art' },
+    { id: 8, icon: '🎵', name: '音樂', description: 'Music' },
+    { id: 9, icon: '🏃', name: '體育', description: 'Physical Education' },
+    { id: 10, icon: '🌱', name: '生物', description: 'Biology' },
+    { id: 11, icon: '💼', name: '經濟', description: 'Economics' },
+    { id: 12, icon: '⚖️', name: '法律', description: 'Law' }
+  ];
+
+  /**
+   * 打開學科選擇模態框
+   */
+  const openSubjectModal = () => {
+    setShowSubjectModal(true);
+  };
+
+  /**
+   * 關閉學科選擇模態框
+   */
+  const closeSubjectModal = () => {
+    setShowSubjectModal(false);
+  };
+
+  /**
+   * 切換學科選擇
+   */
+  const toggleSubjectSelection = (subject) => {
+    setSelectedSubjects(prev => {
+      const isSelected = prev.some(s => s.id === subject.id);
+      if (isSelected) {
+        return prev.filter(s => s.id !== subject.id);
+      } else if (prev.length < 6) { // 最多選擇6個學科
+        return [...prev, subject];
+      }
+      return prev;
+    });
+  };
+
+  /**
+   * 確認學科選擇
+   */
+  const confirmSubjectSelection = () => {
+    closeSubjectModal();
+    // 這裡可以添加保存到後端的邏輯
+    localStorage.setItem('selectedSubjects', JSON.stringify(selectedSubjects));
+  };
+
+  /**
+   * 处理用户登出
+   */
+  const handleLogout = () => {
+    CookieUtils.deleteCookie('userToken');
+    CookieUtils.deleteCookie('userData');
+    setUser(null);
+    setCurrentPage('welcome');
+    setSelectedSubject(null);
+    setSelectedTopic(null);
+    setActiveTab('search');
+    setViewingFile(null);
+    setShowFilePreview(false);
+    setShowUserProfile(false);
+    setUserAvatar(null);
+    localStorage.removeItem('userAvatar');
+  };
+
+  /**
    * 检查Cookie和会话状态
    * 用于自动登录功能
    */
@@ -674,150 +374,7 @@ function App() {
     }
   };
 
-  // ==================== 页面导航函数 ====================
-  
-  /**
-   * 显示登录页面
-   */
-  const showLogin = () => {
-    setCurrentPage('login');
-    setMessage('');
-  };
-  
-  /**
-   * 显示注册页面
-   */
-  const showSignUp = () => {
-    setCurrentPage('signup');
-    setMessage('');
-  };
-  
-  /**
-   * 显示欢迎页面
-   */
-  const showWelcome = () => {
-    setCurrentPage('welcome');
-    setMessage('');
-  };
 
-  // ==================== 表单处理函数 ====================
-  
-  /**
-   * 处理表单输入变化
-   * @param {string} field - 字段名
-   * @param {string} value - 字段值
-   */
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  /**
-   * 处理登录表单提交
-   * @param {Event} e - 表单提交事件
-   */
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage('');
-    
-    try {
-      // 调用登录API
-      const response = await ApiService.login(formData.loginUsername, formData.loginPassword);
-      
-      if (response.success) {
-        const userData = response.data;
-        // 保存用户信息到Cookie
-        CookieUtils.setCookie('userToken', userData.token, 7);
-        CookieUtils.setCookie('userData', JSON.stringify(userData), 7);
-        
-        setUser(userData);
-        setCurrentPage('main');
-        
-        // 清空表单
-        setFormData(prev => ({ ...prev, loginUsername: '', loginPassword: '' }));
-      } else {
-        setMessage(response.message);
-      }
-    } catch (error) {
-      setMessage('登录失败，请稍后重试');
-      console.error('Login error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * 处理注册表单提交
-   * @param {Event} e - 表单提交事件
-   */
-  const handleSignupSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage('');
-    
-    // 验证密码匹配
-    if (formData.signupPassword !== formData.signupConfirmPassword) {
-      setMessage('密码不匹配！');
-      setLoading(false);
-      return;
-    }
-    
-    try {
-      // 调用注册API
-      const response = await ApiService.register(
-        formData.signupUsername,
-        formData.signupEmail,
-        formData.signupPassword
-      );
-      
-      if (response.success) {
-        setMessage(response.message);
-        // 清空表单
-        setFormData(prev => ({
-          ...prev,
-          signupUsername: '',
-          signupEmail: '',
-          signupPassword: '',
-          signupConfirmPassword: ''
-        }));
-        // 2秒后跳转到登录页面
-        setTimeout(() => {
-          setCurrentPage('login');
-          setMessage('');
-        }, 2000);
-      } else {
-        setMessage(response.message);
-      }
-    } catch (error) {
-      setMessage('注册失败，请稍后重试');
-      console.error('Signup error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * 处理用户登出
-   * 清理所有用户状态和Cookie
-   */
-  const handleLogout = () => {
-    CookieUtils.deleteCookie('userToken');
-    CookieUtils.deleteCookie('userData');
-    localStorage.removeItem('userAvatar');
-    setUser(null);
-    setCurrentPage('welcome');
-    setSelectedSubject(null);
-    setSelectedTopic(null);
-    setActiveTab('search');
-    setViewingFile(null);
-    setShowFilePreview(false);
-    setShowUserProfile(false);
-    setUserAvatar(null);
-    setMessage('');
-  };
-
-  // ==================== 内容导航函数 ====================
-  
   /**
    * 处理学科点击
    * @param {string} subjectKey - 学科键名
@@ -847,6 +404,9 @@ function App() {
     setViewingFile(file);
     setShowFilePreview(true);
     
+    // 记录开始时间
+    setFileStartTime(Date.now());
+    
     // 添加到浏览历史
     HistoryUtils.addToHistory({
       type: 'file',
@@ -863,8 +423,35 @@ function App() {
    * 关闭文件预览
    */
   const closeFilePreview = () => {
+    // 计算使用时长已通过实时更新实现
+    
     setShowFilePreview(false);
     setViewingFile(null);
+    setFileStartTime(null);
+  };
+
+  /**
+   * 格式化时长显示
+   * @param {number} duration - 毫秒数
+   * @returns {string} 格式化的时长字符串
+   */
+  const formatDuration = (duration) => {
+    if (!duration) return 'Duration: --';
+    
+    const seconds = Math.floor(duration / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    
+    const remainingMinutes = minutes % 60;
+    const remainingSeconds = seconds % 60;
+    
+    if (hours > 0) {
+      return `Duration: ${hours}h ${remainingMinutes}m`;
+    } else if (minutes > 0) {
+      return `Duration: ${minutes}m ${remainingSeconds}s`;
+    } else {
+      return `Duration: ${remainingSeconds}s`;
+    }
   };
 
   /**
@@ -1000,313 +587,64 @@ function App() {
   
   return (
     <div className="App">
-      {/* 欢迎页面 */}
-      {currentPage === 'welcome' && (
-        <div className="welcome-container">
-          {/* 主题切换按钮 - 仅在欢迎页面显示在全局位置 */}
+      {/* 登录组件 */}
+      {['welcome', 'login', 'signup'].includes(currentPage) && (
+        <>
+          {/* 主题切换按钮 */}
           <button className="theme-toggle" onClick={toggleTheme} style={{position: 'fixed', top: '20px', right: '20px', zIndex: 1000}}>
             {theme === 'light' ? '☀️' : '🌙'}
           </button>
-          <div className="welcome-content">
-            <h1 className="welcome-title">Welcome to Timeday</h1>
-            <p className="welcome-subtitle">for pastpaper searching</p>
-            <div className="welcome-buttons">
-              <button className="welcome-btn signup-btn" onClick={showSignUp}>
-                Sign Up
-              </button>
-              <button className="welcome-btn login-btn" onClick={showLogin}>
-                Login
-              </button>
-            </div>
-          </div>
-        </div>
+          <Login
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
+            onLoginSuccess={(userData) => {
+              setUser(userData);
+              setCurrentPage('main');
+            }}
+            onLogout={() => {
+              setUser(null);
+              setCurrentPage('welcome');
+              setSelectedSubject(null);
+              setSelectedTopic(null);
+              setActiveTab('search');
+              setViewingFile(null);
+              setShowFilePreview(false);
+              setShowUserProfile(false);
+              setUserAvatar(null);
+              localStorage.removeItem('userAvatar');
+            }}
+            theme={theme}
+            onThemeToggle={toggleTheme}
+          />
+        </>
       )}
 
-      {/* 登录页面 */}
-      {currentPage === 'login' && (
-        <form className="login-form active" onSubmit={handleLoginSubmit}>
-          {/* 主题切换按钮 - 在登录页面显示在全局位置 */}
-          <button type="button" className="theme-toggle" onClick={toggleTheme} style={{position: 'fixed', top: '20px', right: '20px', zIndex: 1000}}>
-            {theme === 'light' ? '☀️' : '🌙'}
-          </button>
-          <h1 className="page-title">Login Page</h1>
-          {message && <div className={`message ${message.includes('成功') ? 'success' : 'error'}`}>{message}</div>}
-          
-          <div className="form-row">
-            <div className="form-group">
-              <label>用戶名：</label>
-              <input 
-                type="text" 
-                placeholder="請輸入用戶名"
-                value={formData.loginUsername}
-                onChange={(e) => handleInputChange('loginUsername', e.target.value)}
-                disabled={loading}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>密碼：</label>
-              <input 
-                type="password" 
-                placeholder="請輸入密碼"
-                value={formData.loginPassword}
-                onChange={(e) => handleInputChange('loginPassword', e.target.value)}
-                disabled={loading}
-                required
-              />
-            </div>
-          </div>
-          
-          <div className="button-row">
-            <button type="button" className="back-button" onClick={showWelcome} disabled={loading}>
-              返回
-            </button>
-            <button type="submit" className="submit-button" disabled={loading}>
-              {loading ? '登入中...' : '登入'}
-            </button>
-          </div>
-          
-          <div className="form-footer">
-            <p>還沒有帳號？ <button type="button" className="link-button" onClick={showSignUp}>立即註冊</button></p>
-            <p className="test-accounts">測試帳號: tzy/123456 (访客) | TZY/123456 (用户)</p>
-          </div>
-        </form>
-      )}
-
-      {/* 注册页面 */}
-      {currentPage === 'signup' && (
-        <form className="login-form active" onSubmit={handleSignupSubmit}>
-          {/* 主题切换按钮 - 在注册页面显示在全局位置 */}
-          <button type="button" className="theme-toggle" onClick={toggleTheme} style={{position: 'fixed', top: '20px', right: '20px', zIndex: 1000}}>
-            {theme === 'light' ? '☀️' : '🌙'}
-          </button>
-          <h1 className="page-title">Sign Up Page</h1>
-          {message && <div className={`message ${message.includes('成功') ? 'success' : 'error'}`}>{message}</div>}
-          
-          <div className="form-row">
-            <div className="form-group">
-              <label>用戶名：</label>
-              <input 
-                type="text" 
-                placeholder="請輸入用戶名"
-                value={formData.signupUsername}
-                onChange={(e) => handleInputChange('signupUsername', e.target.value)}
-                disabled={loading}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>電子郵件：</label>
-              <input 
-                type="email" 
-                placeholder="請輸入電子郵件"
-                value={formData.signupEmail}
-                onChange={(e) => handleInputChange('signupEmail', e.target.value)}
-                disabled={loading}
-                required
-              />
-            </div>
-          </div>
-          
-          <div className="form-row">
-            <div className="form-group">
-              <label>密碼：</label>
-              <input 
-                type="password" 
-                placeholder="請輸入密碼"
-                value={formData.signupPassword}
-                onChange={(e) => handleInputChange('signupPassword', e.target.value)}
-                disabled={loading}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>確認密碼：</label>
-              <input 
-                type="password" 
-                placeholder="請再次輸入密碼"
-                value={formData.signupConfirmPassword}
-                onChange={(e) => handleInputChange('signupConfirmPassword', e.target.value)}
-                disabled={loading}
-                required
-              />
-            </div>
-          </div>
-          
-          <div className="button-row">
-            <button type="button" className="back-button" onClick={showWelcome} disabled={loading}>
-              返回
-            </button>
-            <button type="submit" className="submit-button" disabled={loading}>
-              {loading ? '註冊中...' : '註冊'}
-            </button>
-          </div>
-          
-          <div className="form-footer">
-            <p>已有帳號？ <button type="button" className="link-button" onClick={showLogin}>立即登入</button></p>
-          </div>
-        </form>
-      )}
-
-      {/* 用户资料页面 */}
-      {currentPage === 'main' && showUserProfile && (
-        <div className="user-profile-page">
-          {/* 主题切换按钮 - 在用户资料页面显示在全局位置 */}
-          <button className="theme-toggle" onClick={toggleTheme} style={{position: 'fixed', top: '20px', right: '20px', zIndex: 1000}}>
-            {theme === 'light' ? '☀️' : '🌙'}
-          </button>
-          <div className="profile-container">
-            <div className="profile-sidebar">
-              <div className="profile-avatar-section">
-                {userAvatar ? (
-                  <img src={userAvatar} alt="Profile" className="profile-avatar" />
-                ) : (
-                  <div className="profile-avatar default">👤</div>
-                )}
-                <h1 className="profile-username">{user?.username}</h1>
-                <p className="profile-bio">Past Papers Enthusiast</p>
-                <div className="profile-details">
-                  <div className="profile-detail-item">
-                    <span>📧</span>
-                    <span>{user?.email}</span>
-                  </div>
-                  <div className="profile-detail-item">
-                    <span>👤</span>
-                    <span>{user?.userType === 'user' ? 'Premium User' : 'Guest User'}</span>
-                  </div>
-                  <div className="profile-detail-item">
-                    <span>📅</span>
-                    <span>Joined December 2024</span>
-                  </div>
-                </div>
-                <div className="profile-actions">
-                  <label className="profile-action-btn">
-                    📷 Change Avatar
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handleAvatarUpload}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
-                  <button className="profile-action-btn" onClick={backToMain}>
-                    🏠 Back to Dashboard
-                  </button>
-                  <button className="profile-action-btn danger" onClick={handleLogout}>
-                    🚪 Sign Out
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <div className="profile-main">
-              <nav className="profile-nav">
-                <button className="profile-nav-item active">Overview</button>
-                <button className="profile-nav-item">Activity</button>
-                <button className="profile-nav-item">Settings</button>
-              </nav>
+      {/* 主应用内容 */}
+      {currentPage === 'main' && (
+        <>
+          {showUserProfile && (
+            <UserProfile
+              // 数据props
+              user={user}
+              userProfile={userProfile}
+              userAvatar={userAvatar}
+              activeProfileTab={activeProfileTab}
+              selectedSubjects={selectedSubjects}
+              dailyUsageData={dailyUsageData}
+              browsingHistory={browsingHistory}
+              theme={theme}
               
-              <div className="profile-content">
-                <div className="profile-stats">
-                  <div className="profile-stat-card">
-                    <div className="profile-stat-number">{browsingHistory.length}</div>
-                    <div className="profile-stat-label">Papers Viewed</div>
-                  </div>
-                  <div className="profile-stat-card">
-                    <div className="profile-stat-number">
-                      {browsingHistory.filter(h => h.type === 'subject').length}
-                    </div>
-                    <div className="profile-stat-label">Subjects Explored</div>
-                  </div>
-                  <div className="profile-stat-card">
-                    <div className="profile-stat-number">
-                      {browsingHistory.reduce((sum, h) => sum + (h.visitCount || 1), 0)}
-                    </div>
-                    <div className="profile-stat-label">Total Visits</div>
-                  </div>
-                  <div className="profile-stat-card">
-                    <div className="profile-stat-number">7</div>
-                    <div className="profile-stat-label">Days Active</div>
-                  </div>
-                </div>
-                
-                <div className="contribution-graph">
-                  <h3 className="contribution-title">Daily Usage Frequency</h3>
-                  
-                  {/* 月份標籤 - 按實際週數分佈 */}
-                  <div className="contribution-months">
-                    {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
-                      // 計算每個月在53週中的大致位置
-                      const position = (index * 4.4); // 每月約4.4週
-                      return (
-                        <span 
-                          key={index} 
-                          className="contribution-month"
-                          style={{ left: `${position * 14}px` }} // 每週約14px寬
-                        >
-                          {month}
-                        </span>
-                      );
-                    })}
-                  </div>
-                  
-                  <div className="contribution-calendar">
-                    {/* 生成53週 × 7天 = 371個格子 */}
-                    {Array.from({ length: 371 }, (_, i) => {
-                      const level = Math.floor(Math.random() * 5);
-                      const week = Math.floor(i / 7);
-                      const day = i % 7;
-                      
-                      return (
-                        <div 
-                          key={i} 
-                          className={`contribution-day ${level > 0 ? `level-${level}` : ''}`}
-                          title={`Week ${week + 1}, Day ${day + 1}: ${level} activities`}
-                          style={{
-                            gridColumn: week + 1,
-                            gridRow: day + 1
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
-                  
-                  <div className="contribution-legend">
-                    <span>Less</span>
-                    <div className="contribution-day"></div>
-                    <div className="contribution-day level-1"></div>
-                    <div className="contribution-day level-2"></div>
-                    <div className="contribution-day level-3"></div>
-                    <div className="contribution-day level-4"></div>
-                    <span>More</span>
-                  </div>
-                </div>
-                
-                <div className="recent-activity">
-                  <h3 className="activity-title">Recent Activity</h3>
-                  <div className="activity-list">
-                    {browsingHistory.slice(0, 5).map((item, index) => (
-                      <div key={index} className="activity-item">
-                        <div className="activity-icon">
-                          {item.type === 'subject' ? item.icon : '📄'}
-                        </div>
-                        <div className="activity-content">
-                          <div className="activity-description">
-                            Viewed {item.name}
-                            {item.subjectName && ` in ${item.subjectName}`}
-                          </div>
-                          <div className="activity-time">
-                            {new Date(item.lastVisited).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+              // 回调函数props
+              onBackToMain={backToMain}
+              onLogout={handleLogout}
+              onAvatarUpload={handleAvatarUpload}
+              onProfileUpdate={setUserProfile}
+              onTabChange={setActiveProfileTab}
+              onSubjectModalOpen={openSubjectModal}
+              onThemeToggle={toggleTheme}
+            />
+          )}
+        </>
       )}
 
       {/* 主页面 - 登录后的主要功能界面 */}
@@ -1542,7 +880,7 @@ function App() {
                         <div className="file-info">
                           <h2>{viewingFile.title}</h2>
                           <div className="file-meta">
-                            <span className="duration">Duration: 2h15m</span>
+                            <span className="duration">{formatDuration(currentDuration)}</span>
                             {/* 后端需要提供标准答案API */}
                             <button className="mark-scheme-link">Mark scheme link</button>
                           </div>
@@ -1690,7 +1028,7 @@ function App() {
                                 <div className="paper-content">
                                   <p>Session: {i % 2 === 0 ? 'May/June' : 'Oct/Nov'}</p>
                                   <p>Type: Question Paper</p>
-                                  <p>Duration: {i % 3 === 0 ? '1h 15m' : i % 3 === 1 ? '1h 45m' : '2h'}</p>
+                                  <p>Duration: {selectedTopic.id.includes('Paper') ? '2h 15m' : selectedTopic.id.includes('Worksheet') ? '45m' : '1h 30m'}</p>
                                 </div>
                                 <div className="paper-actions">
                                   <button 
@@ -1837,7 +1175,7 @@ function App() {
                   <div className="notebook-sidebar">
                     <div className="notebook-header">
                       <h2>📝 Notebook</h2>
-                      <button className="new-note-btn" title="New Note">+</button>
+                      <button className="notebook-new-note-btn" title="New Note">+</button>
                     </div>
                     
                     {/* 搜索框 */}
@@ -1979,6 +1317,42 @@ function App() {
               )}
             </div>
           </main>
+        </div>
+      )}
+
+      {/* 學科選擇模態框 */}
+      {showSubjectModal && (
+        <div className="modal-overlay" onClick={closeSubjectModal}>
+          <div className="subject-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>选择学科</h3>
+              <button className="close-btn" onClick={closeSubjectModal}>×</button>
+            </div>
+            <div className="modal-content">
+              <p className="modal-description">选择您感兴趣的学科（最多6个）</p>
+              <div className="subjects-selection-grid">
+                {availableSubjects.map((subject) => {
+                  const isSelected = selectedSubjects.some(s => s.id === subject.id);
+                  return (
+                    <div 
+                      key={subject.id} 
+                      className={`subject-selection-card ${isSelected ? 'selected' : ''}`}
+                      onClick={() => toggleSubjectSelection(subject)}
+                    >
+                      <div className="subject-icon">{subject.icon}</div>
+                      <div className="subject-name">{subject.name}</div>
+                      <div className="subject-description">{subject.description}</div>
+                      {isSelected && <div className="selected-indicator">✓</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="cancel-btn" onClick={closeSubjectModal}>取消</button>
+              <button className="confirm-btn" onClick={confirmSubjectSelection}>确认</button>
+            </div>
+          </div>
         </div>
       )}
 
