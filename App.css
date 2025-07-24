@@ -495,40 +495,495 @@ border: 2px solid #000000;
   
 
 /* ==================== 登录注册表单样式 ==================== */
-
 .login-form {
-
 display: none;
-
 background: #ffffff;
-
 padding: 4rem;
-
 margin-top: 2rem;
-
 border-radius: 8px;
-
 box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-
 max-width: 800px;
-
 width: 95%;
-
 border: 2px solid #000000;
-
 }
-
-  
 
 .login-form.active {
-
 display: block;
-
 animation: slideUp 0.3s ease-out;
-
 }
 
+/* ==================== 现代化登录界面样式 ==================== */
+.modern-login-container {
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  width: 95%;
+  margin: 2rem auto;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.login-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: 0.5rem;
+}
+
+.login-subtitle {
+  font-size: 1rem;
+  color: #718096;
+  margin: 0;
+}
+
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #2d3748;
+  margin-bottom: 1rem;
+}
+
+.user-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #ffffff;
+}
+
+.user-card:hover {
+  border-color: #4299e1;
+  box-shadow: 0 2px 8px rgba(66, 153, 225, 0.15);
+}
+
+.user-card.selected {
+  border-color: #4299e1;
+  background: #ebf8ff;
+  box-shadow: 0 2px 8px rgba(66, 153, 225, 0.2);
+}
+
+.user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 1.25rem;
+  margin-right: 0.75rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  font-weight: 500;
+  color: #2d3748;
+  margin-bottom: 0.25rem;
+}
+
+.user-role {
+  font-size: 0.875rem;
+  color: #718096;
+}
+
+.user-status {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot.online {
+  background: #48bb78;
+}
+
+.status-dot.offline {
+  background: #a0aec0;
+}
+
+.status-text {
+  font-size: 0.75rem;
+  color: #718096;
+}
+
+.add-account-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #f7fafc;
+  gap: 0.5rem;
+  color: #4299e1;
+  font-weight: 500;
+}
+
+.add-account-card:hover {
+  border-color: #4299e1;
+  background: #ebf8ff;
+}
+
+.add-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #4299e1;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.password-form {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.password-section label {
+  display: block;
+  font-weight: 500;
+  color: #4a5568;
+  margin-bottom: 0.5rem;
+}
+
+.password-section input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.password-section input:focus {
+  outline: none;
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.forgot-password {
+  background: none;
+  border: none;
+  color: #4299e1;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.sign-in-btn {
+  background: #4299e1;
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.sign-in-btn:hover {
+  background: #3182ce;
+}
+
+.sign-in-btn:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+}
+
+.login-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.footer-links {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #718096;
+}
+
+.language-switch {
+  color: #4299e1;
+  cursor: pointer;
+}
+
+/* 空账号状态样式 */
+.empty-accounts-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.empty-accounts-message p {
+  margin: 8px 0;
+  font-size: 16px;
+}
+
+.empty-accounts-message .subtitle {
+  font-size: 14px;
+  color: #999;
+}
+
+/* 最大账号数量提示 */
+.max-accounts-info {
+  text-align: center;
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.max-accounts-info p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+/* 最大账号数量达到时的消息样式 */
+.max-accounts-message {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.max-accounts-message p {
+  margin-bottom: 20px;
+  color: #666;
+  font-size: 16px;
+}
+
+/* 删除用户按钮样式 */
+.delete-user-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #ff4757;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.user-card {
+  position: relative;
+}
+
+.user-card:hover .delete-user-btn {
+  opacity: 1;
+}
+
+.delete-user-btn:hover {
+  background-color: #ff4757;
+  color: white;
+  transform: scale(1.1);
+}
+
+/* 注册表单样式 */
+/* Modern Signup Container */
+.modern-signup-container {
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  width: 95%;
+  margin: 2rem auto;
+}
+
+.signup-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.signup-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: 0.5rem;
+}
+
+.signup-subtitle {
+  font-size: 1rem;
+  color: #718096;
+  margin: 0;
+}
+
+/* Horizontal Signup Form */
+.horizontal-signup-form {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.form-row {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.horizontal-signup-form .form-group {
+  margin-bottom: 0;
+}
+
+.horizontal-signup-form .form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #2d3748;
+  font-size: 0.9rem;
+}
+
+.horizontal-signup-form .form-group input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  background: #ffffff;
+  color: #2d3748;
+}
+
+.horizontal-signup-form .form-group input::placeholder {
+  color: #a0aec0;
+}
+
+.horizontal-signup-form .form-group input:focus {
+  outline: none;
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+/* 注册页面按钮统一样式 */
+.back-button {
+  flex: 1;
+  background: #ffffff;
+  color: #4299e1;
+  border: 1px solid #e2e8f0;
+  padding: 0.875rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+  text-align: center;
+}
+
+.back-button:hover {
+  background: #f7fafc;
+  border-color: #4299e1;
+}
+
+.signup-btn {
+  flex: 1;
+  background: #4299e1;
+  color: white;
+  border: 1px solid #4299e1;
+  padding: 0.875rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+  text-align: center;
+}
+
+.signup-btn:hover {
+  background: #3182ce;
+  border-color: #3182ce;
+}
+
+.signup-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modern-signup-container {
+    padding: 2rem;
+    margin: 1rem;
+  }
   
+  .form-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .signup-title {
+    font-size: 2rem;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+}
 
 @keyframes slideUp {
 
@@ -1406,39 +1861,7 @@ margin-top: 3.5rem;
 
   
 
-.submit-button, .back-button {
-
-flex: 1;
-
-background: #000000;
-
-border: none;
-
-border-radius: 6px;
-
-color: #ffffff;
-
-padding: 1.25rem;
-
-font-family: inherit;
-
-font-size: 1.1rem;
-
-font-weight: 500;
-
-cursor: pointer;
-
-transition: all 0.3s ease;
-
-}
-
-  
-
-.submit-button:hover, .back-button:hover {
-
-background: #333333;
-
-}
+/* 移除冲突的按钮样式定义 */
 
   
 
@@ -6078,21 +6501,7 @@ border-color: var(--primary-color);
 
   
 
-.submit-button, .back-button {
-
-background: var(--button-primary);
-
-color: var(--button-primary-text);
-
-}
-
-  
-
-.submit-button:hover, .back-button:hover {
-
-background: var(--button-secondary);
-
-}
+/* 移除另一个冲突的按钮样式定义 */
 
   
 
@@ -6306,67 +6715,7 @@ border-color: #ffffff;
 
   
 
-/* 訪客模式退出按鈕 */
 
-.guest-logout-btn {
-
-background: var(--button-secondary);
-
-color: var(--button-secondary-text);
-
-border: 1px solid var(--border-color);
-
-padding: 6px 12px;
-
-border-radius: 6px;
-
-font-size: 12px;
-
-cursor: pointer;
-
-transition: all 0.2s ease;
-
-display: flex;
-
-align-items: center;
-
-gap: 4px;
-
-}
-
-  
-
-.guest-logout-btn:hover {
-
-background: var(--hover-overlay);
-
-border-color: var(--text-secondary);
-
-}
-
-  
-
-/* 深色主題下的訪客退出按鈕 */
-
-body.dark-theme .guest-logout-btn {
-
-background: var(--surface-color);
-
-color: var(--text-primary);
-
-border-color: var(--border-color);
-
-}
-
-  
-
-body.dark-theme .guest-logout-btn:hover {
-
-background: var(--card-background);
-
-border-color: var(--text-secondary);
-
-}
 
   
 

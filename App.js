@@ -27,11 +27,11 @@ function App() {
    * 当前页面状态
    * 可能的值：'welcome', 'login', 'signup', 'main'
    */
-  const [currentPage, setCurrentPage] = useState('welcome');
+  const [currentPage, setCurrentPage] = useState('login');
 
   /**
    * 用户信息状态
-   * 结构：{ username: string, userType: 'user'|'guest', email: string, token: string }
+   * 结构：{ username: string, userType: 'user', email: string, token: string }
    */
   const [user, setUser] = useState(null);
 
@@ -49,8 +49,7 @@ function App() {
    * 浏览历史记录
    */
   const [browsingHistory, setBrowsingHistory] = useState([]);
-  
-  
+
   /**
    * 当前激活的标签页
    * 可能的值：'search', 'textbook', 'syllabus', 'notebook', 'history'
@@ -141,6 +140,8 @@ function App() {
       setUserAvatar(savedAvatar);
     }
   }, []);
+
+
 
   /**
    * 实时更新文件查看时长
@@ -263,7 +264,7 @@ function App() {
       const reader = new FileReader();
       reader.onload = (e) => {
         setUserAvatar(e.target.result);
-        localStorage.setItem('userAvatar', e.target.result);
+          localStorage.setItem('userAvatar', e.target.result);
       };
       reader.readAsDataURL(file);
     }
@@ -328,19 +329,42 @@ function App() {
   /**
    * 处理用户登出
    */
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    console.log('用户切换：当前用户', user?.username, '准备切换到用户选择界面');
+    
+    // 调用后端注销API（可选，用于服务端会话管理）
+    try {
+      await ApiService.logout();
+      console.log('Successfully logged out from server');
+    } catch (error) {
+      console.error('Logout API call failed:', error);
+      // 即使API调用失败，也继续执行本地切换
+    }
+    
+    // 用户切换逻辑：保留所有用户Token，仅清除活跃用户标记
+    console.log(`用户切换：保留用户 ${user?.username} 的Token，仅清除活跃状态`);
+    
+    // 清理旧版本的Cookie（向后兼容）
     CookieUtils.deleteCookie('userToken');
     CookieUtils.deleteCookie('userData');
+    
+    // 清除活跃用户标记，实现用户切换
+    CookieUtils.deleteCookie('activeUser');
+    
+    // 清除localStorage中的用户历史数据（删除local history功能）
+    localStorage.removeItem('userHistory');
+    console.log('已清除localStorage中的用户历史数据');
+    
     setUser(null);
-    setCurrentPage('welcome');
+    setCurrentPage('login'); // 跳转到登录页面，显示用户切换界面
     setSelectedSubject(null);
     setSelectedTopic(null);
     setActiveTab('search');
     setViewingFile(null);
     setShowFilePreview(false);
     setShowUserProfile(false);
-    setUserAvatar(null);
-    localStorage.removeItem('userAvatar');
+    
+    console.log('用户切换完成，显示用户选择界面');
   };
 
   /**
@@ -348,29 +372,70 @@ function App() {
    * 用于自动登录功能
    */
   const checkCookieAndSession = async () => {
-    const userToken = CookieUtils.getCookie('userToken');
-    const userData = CookieUtils.getCookie('userData');
+    // 首先检查旧版本的单用户Token（向后兼容）
+    const legacyUserToken = CookieUtils.getCookie('userToken');
+    const legacyUserData = CookieUtils.getCookie('userData');
     
-    if (userToken && userData) {
+    // 如果存在旧版本Token，迁移到新的多用户格式
+    if (legacyUserToken && legacyUserData) {
       try {
-        // 验证token是否仍然有效
-        const response = await ApiService.validateSession(userToken);
-        if (response.success) {
-          const parsedUserData = JSON.parse(userData);
-          setUser(parsedUserData);
-          setCurrentPage('main');
-        } else {
-          // token无效，清理Cookie
-          CookieUtils.deleteCookie('userToken');
-          CookieUtils.deleteCookie('userData');
-          setCurrentPage('welcome');
-        }
+        const parsedUserData = JSON.parse(legacyUserData);
+        const username = parsedUserData.username;
+        
+        // 迁移到新格式
+        CookieUtils.setUserToken(username, legacyUserToken, parsedUserData);
+        
+        // 清理旧格式
+        CookieUtils.deleteCookie('userToken');
+        CookieUtils.deleteCookie('userData');
+        
+        console.log(`已迁移用户 ${username} 到新的多用户Token格式`);
       } catch (error) {
-        console.error('Session validation error:', error);
-        setCurrentPage('welcome');
+        console.error('迁移旧Token格式失败:', error);
+        CookieUtils.deleteCookie('userToken');
+        CookieUtils.deleteCookie('userData');
       }
-    } else {
-      setCurrentPage('welcome');
+    }
+    
+    // 批量验证所有用户Token
+    try {
+      const validationResults = await CookieUtils.batchValidateTokens(async (username, token) => {
+        const response = await ApiService.validateSession(token);
+        return response.success;
+      });
+      
+      console.log('批量Token验证结果:', validationResults);
+      
+      // 获取有效用户列表
+      const validUsers = CookieUtils.getValidUsers(validationResults);
+      
+      if (validUsers.length > 0) {
+        // 检查是否有活跃用户
+        const activeUser = CookieUtils.getActiveUser();
+        const activeUserData = validUsers.find(user => user.username === activeUser);
+        
+        if (activeUserData) {
+          // 活跃用户仍然有效，直接登录
+          setUser(activeUserData.userData);
+          setCurrentPage('main');
+          console.log(`自动登录活跃用户: ${activeUser}`);
+        } else {
+          // 活跃用户无效，选择第一个有效用户
+          const firstValidUser = validUsers[0];
+          CookieUtils.setActiveUser(firstValidUser.username);
+          setUser(firstValidUser.userData);
+          setCurrentPage('main');
+          console.log(`自动登录第一个有效用户: ${firstValidUser.username}`);
+        }
+      } else {
+        // 没有有效用户，跳转到登录页
+        CookieUtils.deleteCookie('activeUser');
+        setCurrentPage('login');
+        console.log('没有有效用户，跳转到登录页');
+      }
+    } catch (error) {
+      console.error('批量Token验证失败:', error);
+      setCurrentPage('login');
     }
   };
 
@@ -481,6 +546,8 @@ function App() {
     setBrowsingHistory([]);
   };
 
+
+
   // ==================== 子组件定义 ====================
   
   /**
@@ -515,7 +582,6 @@ function App() {
 
   /**
    * 工具栏组件
-   * 仅对'user'类型用户显示，'guest'用户无工具栏
    * @param {Object} props - 组件属性
    * @param {string} props.userType - 用户类型
    * @param {string} props.activeTab - 当前激活标签
@@ -552,7 +618,7 @@ function App() {
 
   /**
    * 侧边栏组件
-   * 显示学科列表和浏览历史（仅限guest用户）
+   * 显示学科列表和浏览历史
    */
   const Sidebar = ({ selectedSubject, subjectsData, onSubjectClick, browsingHistory, clearHistory, activeTab, userType }) => {
     if (activeTab === 'search') {
@@ -594,6 +660,8 @@ function App() {
           <button className="theme-toggle" onClick={toggleTheme} style={{position: 'fixed', top: '20px', right: '20px', zIndex: 1000}}>
             {theme === 'light' ? '☀️' : '🌙'}
           </button>
+          
+
           <Login
             currentPage={currentPage}
             onPageChange={setCurrentPage}
@@ -825,16 +893,8 @@ function App() {
               <div className="user-menu">
                 <span className="user-info">👋 {user?.username}</span>
                 
-                {/* 根據用戶類型顯示不同的操作按鈕 */}
-                {user?.userType === 'guest' ? (
-                  /* 訪客模式：顯示退出按鈕 */
-                  <button className="guest-logout-btn" onClick={handleLogout} title="退出訪客模式">
-                    🚪 退出
-                  </button>
-                ) : (
-                  /* 普通用戶：顯示頭像 */
-                  <UserAvatarComponent onClick={showUserProfilePage} />
-                )}
+                {/* 用戶頭像 */}
+                <UserAvatarComponent onClick={showUserProfilePage} />
                 
                 {/* 主题切换按钮 - 在主页面头部显示 */}
                 <button className="theme-toggle" onClick={toggleTheme}>
@@ -846,14 +906,12 @@ function App() {
 
           {/* 主要内容区域 */}
           <main className="dashboard-content">
-            {/* 工具栏 - 仅对user类型用户显示 */}
-            {user?.userType === 'user' && (
-              <ObsidianToolbar 
-                userType={user?.userType}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-              />
-            )}
+            {/* 工具栏 */}
+            <ObsidianToolbar 
+              userType={user?.userType}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+            />
             
             {/* 侧边栏 - 仅在搜索标签页显示 */}
             {activeTab === 'search' && (

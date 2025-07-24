@@ -62,7 +62,7 @@ const UserProfile = ({
               </div>
               <div className="profile-detail-item">
                 <span>👤</span>
-                <span>{user?.userType === 'user' ? 'Premium User' : 'Guest User'}</span>
+                <span>Premium User</span>
               </div>
               {userProfile.grade && (
                 <div className="profile-detail-item">
