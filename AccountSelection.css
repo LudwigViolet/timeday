@@ -1,0 +1,124 @@
+@import url('https://fonts.googleapis.com/css2?family=Monomaniac+One&display=swap');
+
+.account-selection {
+  background-color: #0a0a0a;
+  color: white;
+  font-family: 'Monomaniac One', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.title {
+  font-size: 3rem;
+  font-weight: normal;
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.account-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.choose-text {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+}
+
+.nav-arrow {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 3rem;
+  cursor: pointer;
+  font-family: 'Monomaniac One', monospace;
+  transition: opacity 0.3s;
+}
+
+.nav-arrow:hover:not(:disabled) {
+  opacity: 0.7;
+}
+
+.nav-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.avatar-circle {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background-color: #d3d3d3;
+  cursor: pointer;
+  transition: opacity 0.3s;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-circle:hover {
+  opacity: 0.8;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: #d3d3d3;
+  border-radius: 50%;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.create-text {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.account-info {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.username {
+  font-size: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.email {
+  font-size: 1rem;
+  margin: 0;
+  opacity: 0.8;
+}
+
+.footer-links {
+  position: absolute;
+  bottom: 2rem;
+  font-size: 1rem;
+  opacity: 0.6;
+}
+
+.footer-links span {
+  cursor: pointer;
+}
+
+.footer-links span:hover {
+  opacity: 1;
+}
